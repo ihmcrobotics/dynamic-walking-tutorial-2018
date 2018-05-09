@@ -11,8 +11,6 @@ import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCor
 import us.ihmc.commonWalkingControlModules.controllerCore.command.ControllerCoreCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.ControllerCoreOutput;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.FeedbackControlCommandList;
-import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.OrientationFeedbackControlCommand;
-import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.PointFeedbackControlCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.SpatialFeedbackControlCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseKinematics.PrivilegedConfigurationCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseKinematics.PrivilegedConfigurationCommand.PrivilegedConfigurationOption;
@@ -32,7 +30,6 @@ import us.ihmc.robotics.screwTheory.InverseDynamicsJoint;
 import us.ihmc.robotics.screwTheory.OneDoFJoint;
 import us.ihmc.robotics.screwTheory.RigidBody;
 import us.ihmc.robotics.screwTheory.ScrewTools;
-import us.ihmc.robotics.screwTheory.SelectionMatrix3D;
 import us.ihmc.robotics.screwTheory.SelectionMatrix6D;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputList;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputListReadOnly;
@@ -45,7 +42,7 @@ import us.ihmc.yoVariables.variable.YoEnum;
 import us.ihmc.yoVariables.variable.YoFramePoint3D;
 import us.ihmc.yoVariables.variable.YoFrameYawPitchRoll;
 
-public class FixedBaseRobotArmController implements RobotController
+public class SimpleRobotArmController implements RobotController
 {
    private static final boolean USE_PRIVILEGED_CONFIGURATION = false;
    private static final ReferenceFrame worldFrame = ReferenceFrame.getWorldFrame();
@@ -53,7 +50,7 @@ public class FixedBaseRobotArmController implements RobotController
    private final String name = getClass().getSimpleName();
    private final YoVariableRegistry registry = new YoVariableRegistry(name);
 
-   private final FixedBaseRobotArm robotArm;
+   private final SimpleRobotArm robotArm;
    private final YoDouble yoTime;
    private final CenterOfMassReferenceFrame centerOfMassFrame;
 
@@ -62,15 +59,10 @@ public class FixedBaseRobotArmController implements RobotController
       SPATIAL, LINEAR_ANGULAR_SEPARATE
    };
 
-   private final YoEnum<WholeBodyControllerCoreMode> controllerCoreMode = new YoEnum<>("controllerCoreMode", registry,
-                                                                                                       WholeBodyControllerCoreMode.class);
+   private final YoEnum<WholeBodyControllerCoreMode> controllerCoreMode = new YoEnum<>("controllerCoreMode", registry, WholeBodyControllerCoreMode.class);
    private final AtomicBoolean controllerCoreModeHasChanged = new AtomicBoolean(false);
    private final List<ControllerCoreModeChangedListener> controllerModeListeners = new ArrayList<>();
-   private final YoEnum<FeedbackControlType> feedbackControlToUse = new YoEnum<>("feedbackControlToUse", registry, FeedbackControlType.class,
-                                                                                                 false);
 
-   private final PointFeedbackControlCommand handPointCommand = new PointFeedbackControlCommand();
-   private final OrientationFeedbackControlCommand handOrientationCommand = new OrientationFeedbackControlCommand();
    private final SpatialFeedbackControlCommand handSpatialCommand = new SpatialFeedbackControlCommand();
    private final ControllerCoreCommand controllerCoreCommand = new ControllerCoreCommand(WholeBodyControllerCoreMode.INVERSE_DYNAMICS);
 
@@ -100,7 +92,7 @@ public class FixedBaseRobotArmController implements RobotController
 
    private final YoBoolean setRandomConfiguration = new YoBoolean("setRandomConfiguration", registry);
 
-   public FixedBaseRobotArmController(FixedBaseRobotArm robotArm, double controlDT, YoGraphicsListRegistry yoGraphicsListRegistry)
+   public SimpleRobotArmController(SimpleRobotArm robotArm, double controlDT, YoGraphicsListRegistry yoGraphicsListRegistry)
    {
       this.robotArm = robotArm;
 
@@ -127,15 +119,11 @@ public class FixedBaseRobotArmController implements RobotController
 
       FeedbackControlCommandList allPossibleCommands = new FeedbackControlCommandList();
 
-      handPointCommand.set(elevator, hand);
-      handOrientationCommand.set(elevator, hand);
       handSpatialCommand.set(elevator, hand);
-      allPossibleCommands.addCommand(handPointCommand);
-      allPossibleCommands.addCommand(handOrientationCommand);
       allPossibleCommands.addCommand(handSpatialCommand);
 
       JointDesiredOutputList lowLevelControllerCoreOutput = new JointDesiredOutputList(ScrewTools.filterJoints(controlledJoints, OneDoFJoint.class));
-      
+
       controllerCore = new WholeBodyControllerCore(controlCoreToolbox, allPossibleCommands, lowLevelControllerCoreOutput, registry);
 
       yoGraphicsListRegistry.registerYoGraphic("desireds", new YoGraphicCoordinateSystem("targetFrame", handTargetPosition, handTargetOrientation, 0.15,
@@ -181,7 +169,7 @@ public class FixedBaseRobotArmController implements RobotController
       trajectoryDuration.set(0.5);
       trajectory.setInitialPose(initialPosition, initialOrientation);
       trajectory.setFinalPose(initialPosition, initialOrientation);
-      trajectory.setTrajectoryTime(trajectoryDuration.getDoubleValue());
+      trajectory.setTrajectoryTime(trajectoryDuration.getValue());
 
       controlLinearX.set(true);
       controlLinearY.set(true);
@@ -210,15 +198,8 @@ public class FixedBaseRobotArmController implements RobotController
       updateFeedbackCommands();
 
       controllerCoreCommand.clear();
-      if (feedbackControlToUse.getEnumValue() == FeedbackControlType.SPATIAL)
-      {
-         controllerCoreCommand.addFeedbackControlCommand(handSpatialCommand);
-      }
-      else
-      {
-         controllerCoreCommand.addFeedbackControlCommand(handPointCommand);
-         controllerCoreCommand.addFeedbackControlCommand(handOrientationCommand);
-      }
+      controllerCoreCommand.addFeedbackControlCommand(handSpatialCommand);
+
       if (USE_PRIVILEGED_CONFIGURATION)
          controllerCoreCommand.addInverseDynamicsCommand(privilegedConfigurationCommand);
       controllerCore.submitControllerCoreCommand(controllerCoreCommand);
@@ -241,7 +222,7 @@ public class FixedBaseRobotArmController implements RobotController
       else
          robotArm.updateSCSRobotJointConfiguration(lowLevelOneDoFJointDesiredDataHolder);
 
-      if (setRandomConfiguration.getBooleanValue())
+      if (setRandomConfiguration.getValue())
       {
          robotArm.setRandomConfiguration();
          setRandomConfiguration.set(false);
@@ -258,21 +239,8 @@ public class FixedBaseRobotArmController implements RobotController
       trajectory.getAngularData(orientation, angularVelocity, angularAcceleration);
       trajectory.getLinearData(position, linearVelocity, linearAcceleration);
 
-      handPointCommand.setBodyFixedPointToControl(controlFramePose.getPosition());
-      handPointCommand.setWeightForSolver(handWeight.getDoubleValue());
-      handPointCommand.setGains(handPositionGains);
-      handPointCommand.setSelectionMatrix(computeLinearSelectionMatrix());
-      handPointCommand.set(position, linearVelocity);
-      handPointCommand.setFeedForwardAction(linearAcceleration);
-
-      handOrientationCommand.setWeightForSolver(handWeight.getDoubleValue());
-      handOrientationCommand.setGains(handOrientationGains);
-      handOrientationCommand.setSelectionMatrix(computeAngularSelectionMatrix());
-      handOrientationCommand.set(orientation, angularVelocity);
-      handOrientationCommand.setFeedForwardAction(angularAcceleration);
-
       handSpatialCommand.setControlFrameFixedInEndEffector(controlFramePose);
-      handSpatialCommand.setWeightForSolver(handWeight.getDoubleValue());
+      handSpatialCommand.setWeightForSolver(handWeight.getValue());
       handSpatialCommand.setPositionGains(handPositionGains);
       handSpatialCommand.setOrientationGains(handOrientationGains);
       handSpatialCommand.setSelectionMatrix(computeSpatialSelectionMatrix());
@@ -283,7 +251,7 @@ public class FixedBaseRobotArmController implements RobotController
 
    public void updateTrajectory()
    {
-      if (goToTarget.getBooleanValue())
+      if (goToTarget.getValue())
       {
          FramePoint3D initialPosition = new FramePoint3D(robotArm.getHandControlFrame());
          initialPosition.changeFrame(worldFrame);
@@ -294,48 +262,26 @@ public class FixedBaseRobotArmController implements RobotController
          FrameQuaternion finalOrientation = new FrameQuaternion();
          handTargetOrientation.getFrameOrientationIncludingFrame(finalOrientation);
          trajectory.setFinalPose(finalPosition, finalOrientation);
-         trajectory.setTrajectoryTime(trajectoryDuration.getDoubleValue());
+         trajectory.setTrajectoryTime(trajectoryDuration.getValue());
          trajectory.initialize();
-         trajectoryStartTime.set(yoTime.getDoubleValue());
+         trajectoryStartTime.set(yoTime.getValue());
          goToTarget.set(false);
       }
 
-      trajectory.compute(yoTime.getDoubleValue() - trajectoryStartTime.getDoubleValue());
-   }
-
-   private SelectionMatrix3D computeLinearSelectionMatrix()
-   {
-      SelectionMatrix3D selectionMatrix = new SelectionMatrix3D();
-
-      selectionMatrix.selectXAxis(controlLinearX.getBooleanValue());
-      selectionMatrix.selectYAxis(controlLinearY.getBooleanValue());
-      selectionMatrix.selectZAxis(controlLinearZ.getBooleanValue());
-
-      return selectionMatrix;
-   }
-
-   private SelectionMatrix3D computeAngularSelectionMatrix()
-   {
-      SelectionMatrix3D selectionMatrix = new SelectionMatrix3D();
-
-      selectionMatrix.selectXAxis(controlAngularX.getBooleanValue());
-      selectionMatrix.selectYAxis(controlAngularY.getBooleanValue());
-      selectionMatrix.selectZAxis(controlAngularZ.getBooleanValue());
-
-      return selectionMatrix;
+      trajectory.compute(yoTime.getValue() - trajectoryStartTime.getValue());
    }
 
    private SelectionMatrix6D computeSpatialSelectionMatrix()
    {
       SelectionMatrix6D selectionMatrix = new SelectionMatrix6D();
 
-      selectionMatrix.selectAngularX(controlAngularX.getBooleanValue());
-      selectionMatrix.selectAngularY(controlAngularY.getBooleanValue());
-      selectionMatrix.selectAngularZ(controlAngularZ.getBooleanValue());
+      selectionMatrix.selectAngularX(controlAngularX.getValue());
+      selectionMatrix.selectAngularY(controlAngularY.getValue());
+      selectionMatrix.selectAngularZ(controlAngularZ.getValue());
 
-      selectionMatrix.selectLinearX(controlLinearX.getBooleanValue());
-      selectionMatrix.selectLinearY(controlLinearY.getBooleanValue());
-      selectionMatrix.selectLinearZ(controlLinearZ.getBooleanValue());
+      selectionMatrix.selectLinearX(controlLinearX.getValue());
+      selectionMatrix.selectLinearY(controlLinearY.getValue());
+      selectionMatrix.selectLinearZ(controlLinearZ.getValue());
 
       return selectionMatrix;
    }

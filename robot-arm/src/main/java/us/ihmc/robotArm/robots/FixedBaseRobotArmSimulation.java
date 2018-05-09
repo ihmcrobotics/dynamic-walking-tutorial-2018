@@ -13,8 +13,8 @@ public class FixedBaseRobotArmSimulation
       double controlDT = 5.0e-5;
       YoGraphicsListRegistry yoGraphicsListRegistry = new YoGraphicsListRegistry();
 
-      FixedBaseRobotArm robotArm = new FixedBaseRobotArm(controlDT);
-      FixedBaseRobotArmController robotArmController = new FixedBaseRobotArmController(robotArm, controlDT, yoGraphicsListRegistry);
+      SimpleRobotArm robotArm = new SimpleRobotArm(controlDT);
+      SimpleRobotArmController robotArmController = new SimpleRobotArmController(robotArm, controlDT, yoGraphicsListRegistry);
       robotArmController.registerControllerCoreModeChangedListener((mode) -> robotArm.setDynamic(mode == WholeBodyControllerCoreMode.INVERSE_DYNAMICS));
       robotArm.setController(robotArmController);
 

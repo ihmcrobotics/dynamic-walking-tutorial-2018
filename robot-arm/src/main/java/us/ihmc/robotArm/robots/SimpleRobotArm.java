@@ -33,7 +33,7 @@ import us.ihmc.simulationconstructionset.Robot;
 import us.ihmc.yoVariables.registry.YoVariableRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
 
-public class FixedBaseRobotArm extends Robot
+public class SimpleRobotArm extends Robot
 {
    private static final double SMALL_MASS = 0.2;
    private static final Vector3D X_AXIS = new Vector3D(1.0, 0.0, 0.0);
@@ -95,9 +95,9 @@ public class FixedBaseRobotArm extends Robot
 
    private final Map<OneDoFJoint, OneDegreeOfFreedomJoint> idToSCSJointMap = new HashMap<>();
 
-   public FixedBaseRobotArm(double dt)
+   public SimpleRobotArm(double dt)
    {
-      super(FixedBaseRobotArm.class.getSimpleName());
+      super(SimpleRobotArm.class.getSimpleName());
       this.setGravity(0.0, 0.0, -gravity);
 
       elevator = new RigidBody("elevator", worldFrame);
