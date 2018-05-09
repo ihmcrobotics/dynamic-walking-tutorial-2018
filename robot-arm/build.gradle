@@ -21,5 +21,6 @@ ihmc {
 
 mainDependencies {
    compile group: "us.ihmc", name: "simulation-construction-set", version: "0.12.0"
+   compile group: "us.ihmc", name: "simulation-construction-set-tools", version: "0.11.0-dynamic-walking-2018"
    compile group: "us.ihmc", name: "ihmc-common-walking-control-modules", version: "0.11.0-dynamic-walking-2018"
 }
