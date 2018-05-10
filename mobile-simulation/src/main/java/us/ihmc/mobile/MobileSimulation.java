@@ -17,6 +17,7 @@ public class MobileSimulation
 
       // Instantiate a SCS object using the MobileRobot object reference
       simulationConstructionSet = new SimulationConstructionSet(mobile);
+      // By default a ground plane is added in SCS, we have no need for it in this example.
       simulationConstructionSet.setGroundVisible(false);
 
       simulationConstructionSet.setCameraTracking(false, false, false, false);
@@ -27,9 +28,16 @@ public class MobileSimulation
       simulationConstructionSet.setCameraFix(0.0, 0.0, 0.8);
 
       simulationConstructionSet.setCameraTrackingVars("ef_track00_x", "ef_track00_y", "ef_track00_z");
-      simulationConstructionSet.setSimulateNoFasterThanRealTime(true);
 
+      // As this example simulation is rather simple, let's prevent SCS from simulating faster than real-time.
+      simulationConstructionSet.setSimulateNoFasterThanRealTime(true);
+      // Defining the simulation tick duration and the rate at which the buffer should record data.
       simulationConstructionSet.setDT(0.02, 1);
+      // Setting a default simulation duration after what SCS stops simulating. Simulation can be still be resumed in the GUI.
+      simulationConstructionSet.setSimulateDuration(30.0);
+      // Setting the buffer such that when SCS reaches the simulation duration, the buffer is entirely filled and the graphs are
+      simulationConstructionSet.setMaxBufferSize(1501);
+      // Launch the simulator.
       simulationConstructionSet.startOnAThread();
    }
 
