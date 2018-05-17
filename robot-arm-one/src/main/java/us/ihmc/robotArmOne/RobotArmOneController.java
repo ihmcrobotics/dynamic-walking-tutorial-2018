@@ -74,6 +74,11 @@ public class RobotArmOneController implements RobotController
       }
    }
 
+   /**
+    * This method allows to manage the initialization part needed to get the controller ready to go.
+    * It is NOT called by default by the simulation, it has to be called at the desired location in
+    * the configuration of the robot and control environment.
+    */
    @Override
    public void initialize()
    {
@@ -95,6 +100,10 @@ public class RobotArmOneController implements RobotController
       kds.get(SevenDoFArmJointEnum.wristYaw).set(2.0);
    }
 
+   /**
+    * This method is called by the simulation every simulation tick. This is where the control part
+    * is to be implemented.
+    */
    @Override
    public void doControl()
    {
