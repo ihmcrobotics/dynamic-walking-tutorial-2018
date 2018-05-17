@@ -21,8 +21,10 @@ ihmc {
 
 mainDependencies {
    compile group: "us.ihmc", name: "euclid", version: "0.8.2"
+   compile group: "us.ihmc", name: "robot-arm-one", version: "source"
    compile group: "us.ihmc", name: "simulation-construction-set", version: "0.12.0"
    compile group: "us.ihmc", name: "simulation-construction-set-tools", version: "0.11.0-dynamic-walking-2018"
+   compile group: "us.ihmc", name: "ihmc-simulation-toolkit", version: "0.11.0-dynamic-walking-2018"
 
    compile group: "us.ihmc", name: "utilities", version: "source"
 }
