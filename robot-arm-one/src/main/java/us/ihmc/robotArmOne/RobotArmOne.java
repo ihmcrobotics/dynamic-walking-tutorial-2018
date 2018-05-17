@@ -85,18 +85,23 @@ public class RobotArmOne extends Robot
       return childLink;
    }
 
+   public PinJoint getJoint(SevenDoFArmJointEnum jointEnum)
+   {
+      return jointMap.get(jointEnum);
+   }
+
    public double getCurrentJointPosition(SevenDoFArmJointEnum jointEnum)
    {
-      return jointMap.get(jointEnum).getQ();
+      return getJoint(jointEnum).getQ();
    }
 
    public double getCurrentJointVelocity(SevenDoFArmJointEnum jointEnum)
    {
-      return jointMap.get(jointEnum).getQD();
+      return getJoint(jointEnum).getQD();
    }
 
    public void setDesiredJointEffort(SevenDoFArmJointEnum jointEnum, double desiredEffort)
    {
-      jointMap.get(jointEnum).setTau(desiredEffort);
+      getJoint(jointEnum).setTau(desiredEffort);
    }
 }
