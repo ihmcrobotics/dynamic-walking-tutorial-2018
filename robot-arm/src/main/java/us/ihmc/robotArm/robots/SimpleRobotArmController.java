@@ -246,7 +246,10 @@ public class SimpleRobotArmController implements RobotController
       handSpatialCommand.setSelectionMatrix(computeSpatialSelectionMatrix());
       handSpatialCommand.set(position, linearVelocity);
       handSpatialCommand.set(orientation, angularVelocity);
-      handSpatialCommand.changeFrameAndSetFeedForward(angularAcceleration, linearAcceleration);
+      if (controllerCoreMode.getEnumValue() == WholeBodyControllerCoreMode.INVERSE_DYNAMICS)
+         handSpatialCommand.changeFrameAndSetFeedForward(angularAcceleration, linearAcceleration);
+      else if (controllerCoreMode.getEnumValue() == WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
+         handSpatialCommand.changeFrameAndSetFeedForward(angularVelocity, linearVelocity);
    }
 
    public void updateTrajectory()
