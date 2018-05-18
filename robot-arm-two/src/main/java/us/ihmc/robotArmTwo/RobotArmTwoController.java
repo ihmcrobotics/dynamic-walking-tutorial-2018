@@ -23,7 +23,6 @@ import us.ihmc.robotics.screwTheory.InverseDynamicsJoint;
 import us.ihmc.robotics.screwTheory.OneDoFJoint;
 import us.ihmc.robotics.screwTheory.RigidBody;
 import us.ihmc.robotics.screwTheory.ScrewTools;
-import us.ihmc.sensorProcessing.outputData.JointDesiredOutputList;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputListReadOnly;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputReadOnly;
 import us.ihmc.sensorProcessing.simulatedSensors.InverseDynamicsJointsFromSCSRobotGenerator;
@@ -75,19 +74,46 @@ public class RobotArmTwoController implements RobotController
     */
    private final SCSToInverseDynamicsJointMap jointMap;
 
+   /**
+    * This is the IHMC whole-body controller core which is used at the core of the walking
+    * controller on Atlas and Valkyrie.
+    */
    private final WholeBodyControllerCore wholeBodyControllerCore;
+   /**
+    * A reference frame which origin is at the center of mass of the robot. It is not used besides
+    * for creating the controller core in this example.
+    */
    private final ReferenceFrame centerOfMassFrame;
-
-   private final ControllerCoreCommand controllerCoreCommand;
+   /**
+    * The controller core can run 3 different frame work:
+    * <ul>
+    * <li>Inverse Dynamics: Given desired accelerations and contact states, the controller core
+    * computes desired joint torques.
+    * <li>Virtual Model Control: It is a generalization of the "Jacobian transpose" method to a
+    * whole-body framework, the output is desired joint torques.
+    * <li>Inverse Kinematics: Given desired velocities, the controller core can integrate the these
+    * velocities to output both desired joint velocities and positions.
+    * </p>
+    */
    private final WholeBodyControllerCoreMode controllerCoreMode;
 
+   /**
+    * @param robotArm this is our simulated robot.
+    * @param controlDT the duration of a controller tick. In this example, it should be equal to the
+    *           simulation DT.
+    * @param gravityZ the magnitude of the gravitational acceleration. It should be the same as the
+    *           one used for the simulation.
+    * @param controllerCoreMode indicates the mode for this simulation.
+    * @param yoGraphicsListRegistry in this example, we do not have use for this. In general, this
+    *           registry allows to create dynamic 3D graphics in the simulation.
+    */
    public RobotArmTwoController(RobotArmOne robotArm, double controlDT, double gravityZ, WholeBodyControllerCoreMode controllerCoreMode,
                                 YoGraphicsListRegistry yoGraphicsListRegistry)
    {
+      time = robotArm.getYoTime();
       this.simulatedRobotArm = robotArm;
       this.controllerCoreMode = controllerCoreMode;
-      controllerCoreCommand = new ControllerCoreCommand(controllerCoreMode);
-      time = robotArm.getYoTime();
+
       inverseDynamicsRobot = new InverseDynamicsJointsFromSCSRobotGenerator(robotArm);
       jointMap = inverseDynamicsRobot.getSCSToInverseDynamicsJointMap();
       centerOfMassFrame = new CenterOfMassReferenceFrame("centerOfMassFrame", WORLD_FRAME, inverseDynamicsRobot.getElevator());
@@ -106,47 +132,131 @@ public class RobotArmTwoController implements RobotController
       }
    }
 
-   public WholeBodyControllerCore createControllerCore(double controlDT, double gravityZ, YoGraphicsListRegistry yoGraphicsListRegistry)
+   private WholeBodyControllerCore createControllerCore(double controlDT, double gravityZ, YoGraphicsListRegistry yoGraphicsListRegistry)
    {
+      // As our robot arm only has a fixed-base, we just set the floating joint to null indicating that there is none. 
       FloatingInverseDynamicsJoint rootJoint = null;
+      /*
+       * The elevator is a massless, sizeless rigid-body fixed in world to which the first joint of
+       * the robot is attached. The name comes from the use of this rigid-body to add the gravity
+       * effect to the robot by making it accelerate like an elevator when it starts moving.
+       * However, this elevator is always fixed in world with no velocity.
+       */
       RigidBody elevator = inverseDynamicsRobot.getElevator();
+      // These are all the joints of the robot arm.
       InverseDynamicsJoint[] inverseDynamicsJoints = ScrewTools.computeSubtreeJoints(elevator);
+      // The same joint but casted as we know they are all one degree-of-freedom joints.
       OneDoFJoint[] controlledJoints = ScrewTools.filterJoints(inverseDynamicsJoints, OneDoFJoint.class);
-
+      // This class contains basic optimization settings required for QP formulation.
       ControllerCoreOptimizationSettings controllerCoreOptimizationSettings = new RobotArmTwoOptimizationSettings();
-
+      // This is the toolbox for the controller core with everything it needs to run properly.
       WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT, gravityZ, rootJoint, inverseDynamicsJoints, centerOfMassFrame,
                                                                             controllerCoreOptimizationSettings, yoGraphicsListRegistry, registry);
+      /*
+       * We indicate in the following that we want to be able to run the 3 different control modes.
+       * As our robot has only a fixed-base and supporting rigid-body, we just provide and empty
+       * list for the contacting bodies.
+       */
       toolbox.setupForInverseKinematicsSolver();
       toolbox.setupForInverseDynamicsSolver(Collections.emptyList());
       toolbox.setupForVirtualModelControlSolver(elevator, Collections.emptyList());
 
+      /*
+       * Upon instantiation, the controller core attempts to create all the YoVariables needed for
+       * debug purpose and monitoring. For this purpose, a template of all the feedback commands
+       * that'll be needed during this control session should be provided. In this example, we only
+       * are interested in controlling the robot in jointspace, so we make a template that is about
+       * controlling every joint individually.
+       */
       FeedbackControlCommandList allPossibleCommands = new FeedbackControlCommandList();
       JointspaceFeedbackControlCommand command = new JointspaceFeedbackControlCommand();
       for (OneDoFJoint joint : controlledJoints)
       {
+         // No need to put actual data, only the joint being controlled is used at this stage.
          command.addJoint(joint, 0.0, 0.0, 0.0);
       }
       allPossibleCommands.addCommand(command);
 
-      JointDesiredOutputList lowLevelControllerOutput = new JointDesiredOutputList(controlledJoints);
-      return new WholeBodyControllerCore(toolbox, allPossibleCommands, lowLevelControllerOutput, registry);
+      // Finally we can create the controller core.
+      return new WholeBodyControllerCore(toolbox, allPossibleCommands, registry);
    }
 
    @Override
    public void initialize()
    {
-      gains.setPDGains(100.0, 1.0);
+      /*
+       * Initialize the gains. The first term is the proportional gain while the second is the
+       * damping ratio. A value of 1.0 for the damping ratio will compute a derivative gain to
+       * achieve critical damping.
+       */
+      gains.setPDGains(50.0, 1.0);
+      // This is to indicate that we want to use damping ratio of directly setting the derivative gain.
       gains.createDerivativeGainUpdater(true);
-      wholeBodyControllerCore.initialize();
    }
 
    @Override
    public void doControl()
    {
+      // We update the configuration state of our inverse dynamics robot model from the latest state of the simulated robot.
       inverseDynamicsRobot.updateInverseDynamicsRobotModelFromRobot(true);
+      // This updates the reference frame to snap its origin to the new position of the robot center of mass.
       centerOfMassFrame.update();
+      // Update the joint desired positions and velocities.
+      updateDesireds();
 
+      // We store the objective for each joint in this command that will be processed by the controller core.
+      JointspaceFeedbackControlCommand jointCommand = new JointspaceFeedbackControlCommand();
+
+      for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
+      {
+         PinJoint simulatedJoint = simulatedRobotArm.getJoint(jointEnum);
+         OneDoFJoint inverseDynamicsJoint = jointMap.getInverseDynamicsOneDoFJoint(simulatedJoint);
+         double desiredPosition = desiredPositions.get(jointEnum).getValue();
+         double desiredVelocity = desiredVelocities.get(jointEnum).getValue();
+         jointCommand.addJoint(inverseDynamicsJoint, desiredPosition, desiredVelocity, 0.0);
+      }
+
+      jointCommand.setGains(gains);
+      /*
+       * This weight is used to prioritize this command in the optimization problem. As this command
+       * is the only one in this example, the weight value is not very important.
+       */
+      jointCommand.setWeightForSolver(1.0);
+
+      ControllerCoreCommand controllerCoreCommand = new ControllerCoreCommand(controllerCoreMode);
+      controllerCoreCommand.addFeedbackControlCommand(jointCommand);
+
+      // Submit all the objectives to be achieved to the controller core.
+      wholeBodyControllerCore.submitControllerCoreCommand(controllerCoreCommand);
+      // Magic happens here.
+      wholeBodyControllerCore.compute();
+      // Get the result for this control tick.
+      JointDesiredOutputListReadOnly outputForLowLevelController = wholeBodyControllerCore.getOutputForLowLevelController();
+
+      // Update the simulated joints.
+      for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
+      {
+         PinJoint simulatedJoint = simulatedRobotArm.getJoint(jointEnum);
+         OneDoFJoint inverseDynamicsJoint = jointMap.getInverseDynamicsOneDoFJoint(simulatedJoint);
+         JointDesiredOutputReadOnly jointDesiredOutput = outputForLowLevelController.getJointDesiredOutput(inverseDynamicsJoint);
+
+         if (controllerCoreMode != WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
+         { // The control mode is either Inverse Dynamics or Virtual Model Control, so the joint output is desired torque.
+            simulatedJoint.setTau(jointDesiredOutput.getDesiredTorque());
+         }
+         else
+         { // The control mode is Inverse Kinematics, so the joint output is desired position and velocity.
+            simulatedJoint.setQ(jointDesiredOutput.getDesiredPosition());
+            simulatedJoint.setQd(jointDesiredOutput.getDesiredVelocity());
+         }
+      }
+   }
+
+   /**
+    * The desired joint positions and velocities are computed here.
+    */
+   public void updateDesireds()
+   {
       { // Making the shoulder yaw joint follow a sine wave trajectory:
          double frequency = 0.2;
          double phase = Math.PI;
@@ -170,43 +280,6 @@ public class RobotArmTwoController implements RobotController
 
          desiredPositions.get(SevenDoFArmJointEnum.elbowPitch).set(q);
          desiredVelocities.get(SevenDoFArmJointEnum.elbowPitch).set(qDot);
-      }
-
-      JointspaceFeedbackControlCommand jointCommand = new JointspaceFeedbackControlCommand();
-
-      for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
-      {
-         PinJoint simulatedJoint = simulatedRobotArm.getJoint(jointEnum);
-         OneDoFJoint inverseDynamicsJoint = jointMap.getInverseDynamicsOneDoFJoint(simulatedJoint);
-         double desiredPosition = desiredPositions.get(jointEnum).getValue();
-         double desiredVelocity = desiredVelocities.get(jointEnum).getValue();
-         jointCommand.addJoint(inverseDynamicsJoint, desiredPosition, desiredVelocity, 0.0);
-      }
-
-      jointCommand.setGains(gains);
-      jointCommand.setWeightForSolver(1.0);
-
-      controllerCoreCommand.addFeedbackControlCommand(jointCommand);
-
-      wholeBodyControllerCore.submitControllerCoreCommand(controllerCoreCommand);
-      wholeBodyControllerCore.compute();
-      JointDesiredOutputListReadOnly outputForLowLevelController = wholeBodyControllerCore.getOutputForLowLevelController();
-
-      for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
-      {
-         PinJoint simulatedJoint = simulatedRobotArm.getJoint(jointEnum);
-         OneDoFJoint inverseDynamicsJoint = jointMap.getInverseDynamicsOneDoFJoint(simulatedJoint);
-         JointDesiredOutputReadOnly jointDesiredOutput = outputForLowLevelController.getJointDesiredOutput(inverseDynamicsJoint);
-
-         if (controllerCoreMode != WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
-         {
-            simulatedJoint.setTau(jointDesiredOutput.getDesiredTorque());
-         }
-         else
-         {
-            simulatedJoint.setQ(jointDesiredOutput.getDesiredPosition());
-            simulatedJoint.setQd(jointDesiredOutput.getDesiredVelocity());
-         }
       }
    }
 
