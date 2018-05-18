@@ -3,10 +3,18 @@ package us.ihmc.robotArmOne;
 import java.util.EnumMap;
 
 import us.ihmc.dwc.utilities.SevenDoFArmParameters.SevenDoFArmJointEnum;
+import us.ihmc.euclid.tuple3D.Vector3D;
+import us.ihmc.euclid.tuple3D.interfaces.Vector3DReadOnly;
 import us.ihmc.simulationconstructionset.Link;
 import us.ihmc.simulationconstructionset.PinJoint;
 import us.ihmc.simulationconstructionset.Robot;
 
+/**
+ * This the robot-arm we will use for the next few examples.
+ * <p>
+ * It is a simple robot arm with a fixed-base and 7 degrees of freedom.
+ * </p>
+ */
 public class RobotArmOne extends Robot
 {
    private final PinJoint shoulderYawJoint;
@@ -23,6 +31,10 @@ public class RobotArmOne extends Robot
    {
       super("RobotArm1");
 
+      /*
+       * Let's first create all the joints, they are all PinJoints which is used to define a 1-DoF
+       * revolute joint.
+       */
       shoulderYawJoint = createArmJoint(SevenDoFArmJointEnum.shoulderYaw);
       shoulderRollJoint = createArmJoint(SevenDoFArmJointEnum.shoulderRoll);
       shoulderPitchJoint = createArmJoint(SevenDoFArmJointEnum.shoulderPitch);
@@ -31,6 +43,7 @@ public class RobotArmOne extends Robot
       wristRollJoint = createArmJoint(SevenDoFArmJointEnum.wristRoll);
       wristYawJoint = createArmJoint(SevenDoFArmJointEnum.wristYaw);
 
+      // We create and attach the links here.
       setupLinks();
 
       addRootJoint(shoulderYawJoint);
@@ -50,8 +63,17 @@ public class RobotArmOne extends Robot
       jointMap.put(SevenDoFArmJointEnum.wristYaw, wristYawJoint);
    }
 
+   private PinJoint createArmJoint(SevenDoFArmJointEnum jointEnum)
+   {
+      String jointName = jointEnum.getJointName();
+      Vector3D jointOffset = jointEnum.getJointOffset();
+      Vector3DReadOnly jointAxis = jointEnum.getJointAxis();
+      return new PinJoint(jointName, jointOffset, this, jointAxis);
+   }
+
    private void setupLinks()
    {
+      // Let's first create all the links.
       Link shoulderYawChildLink = createChildLink(SevenDoFArmJointEnum.shoulderYaw);
       Link shoulderRollChildLink = createChildLink(SevenDoFArmJointEnum.shoulderRoll);
       Link shoulderPitchChildLink = createChildLink(SevenDoFArmJointEnum.shoulderPitch);
@@ -60,6 +82,7 @@ public class RobotArmOne extends Robot
       Link wristRollChildLink = createChildLink(SevenDoFArmJointEnum.wristRoll);
       Link wristYawChildLink = createChildLink(SevenDoFArmJointEnum.wristYaw);
 
+      // Now we can attach the links to their respective parent joint.
       shoulderYawJoint.setLink(shoulderYawChildLink);
       shoulderRollJoint.setLink(shoulderRollChildLink);
       shoulderPitchJoint.setLink(shoulderPitchChildLink);
@@ -67,12 +90,6 @@ public class RobotArmOne extends Robot
       wristPitchJoint.setLink(wristPitchChildLink);
       wristRollJoint.setLink(wristRollChildLink);
       wristYawJoint.setLink(wristYawChildLink);
-   }
-
-   private PinJoint createArmJoint(SevenDoFArmJointEnum jointEnum)
-   {
-      PinJoint pinJoint = new PinJoint(jointEnum.getJointName(), jointEnum.getJointOffset(), this, jointEnum.getJointAxis());
-      return pinJoint;
    }
 
    private Link createChildLink(SevenDoFArmJointEnum jointEnum)
@@ -90,16 +107,38 @@ public class RobotArmOne extends Robot
       return jointMap.get(jointEnum);
    }
 
+   /**
+    * Retrieves the current joint position given its joint enum.
+    * 
+    * @param jointEnum the enum of the joint we need the position of.
+    * @return the joint current position.
+    */
    public double getCurrentJointPosition(SevenDoFArmJointEnum jointEnum)
    {
       return getJoint(jointEnum).getQ();
    }
 
+   /**
+    * Retrieves the current joint velocity given its joint enum.
+    * 
+    * @param jointEnum the enum of the joint we need the velocity of.
+    * @return the joint current velocity.
+    */
    public double getCurrentJointVelocity(SevenDoFArmJointEnum jointEnum)
    {
       return getJoint(jointEnum).getQD();
    }
 
+   /**
+    * Sets the desired effort for a joint given its corresponding enum.
+    * <p>
+    * The joints are assumed to be perfectly actuated, i.e. the desired effort is exactly applied on
+    * the joint.
+    * </p>
+    * 
+    * @param jointEnum the enum of the joint we want to apply the desired effort on.
+    * @param desiredEffort the desired effort value.
+    */
    public void setDesiredJointEffort(SevenDoFArmJointEnum jointEnum, double desiredEffort)
    {
       getJoint(jointEnum).setTau(desiredEffort);

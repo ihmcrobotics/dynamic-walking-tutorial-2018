@@ -2,7 +2,7 @@ package us.ihmc.robotArmTwo;
 
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCoreMode;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
-import us.ihmc.robotArmOne.RobotArmOne;
+import us.ihmc.simulationconstructionset.Robot;
 import us.ihmc.simulationconstructionset.SimulationConstructionSet;
 
 public class RobotArmTwoSimulation
@@ -23,21 +23,23 @@ public class RobotArmTwoSimulation
       // This is an additional registry that allows to display 3D graphics in the simulation. This feature is not demonstrated in this example.
       YoGraphicsListRegistry yoGraphicsListRegistry = new YoGraphicsListRegistry();
       // Create an instance of the robot arm.
-      RobotArmOne robotArm = new RobotArmOne();
+      RobotArmTwo robotArm = new RobotArmTwo();
+      // Use the simulated definition of the robot to define the simulation environment.
+      Robot simulatedRobot = robotArm.getSimulatedRobot();
       // Make sure the simulation and the controller are using the same value for the gravity.
-      robotArm.setGravity(-gravityMagnitude);
+      simulatedRobot.setGravity(-gravityMagnitude);
       // Create an instance of the controller.
       RobotArmTwoController robotArmController = new RobotArmTwoController(robotArm, simulateDT, gravityMagnitude, controlMode, yoGraphicsListRegistry);
       // When using the inverse kinematics mode, the simulation dynamics is disabled to simply provide a direct visualization of the controller core ouptut.
       if (controlMode == WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
-         robotArm.setDynamic(false);
+         simulatedRobot.setDynamic(false);
       // Make sure to initialize the controller.
       robotArmController.initialize();
       // Attach the controller to the robot.
-      robotArm.setController(robotArmController);
+      simulatedRobot.setController(robotArmController);
 
       // Creating the simulation.
-      SimulationConstructionSet scs = new SimulationConstructionSet(robotArm);
+      SimulationConstructionSet scs = new SimulationConstructionSet(simulatedRobot);
       // As this example simulation is rather simple, let's prevent SCS from simulating faster than real-time.
       scs.setSimulateNoFasterThanRealTime(true);
       // Defining the simulation DT and the frequency at which data is logged.
