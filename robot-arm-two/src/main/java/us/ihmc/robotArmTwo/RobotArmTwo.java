@@ -1,8 +1,8 @@
 package us.ihmc.robotArmTwo;
 
-import us.ihmc.dwc.utilities.SevenDoFArmParameters.SevenDoFArmJointEnum;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
 import us.ihmc.robotArmOne.RobotArmOne;
+import us.ihmc.robotArmOne.SevenDoFArmParameters.SevenDoFArmJointEnum;
 import us.ihmc.robotics.referenceFrames.CenterOfMassReferenceFrame;
 import us.ihmc.robotics.screwTheory.InverseDynamicsJoint;
 import us.ihmc.robotics.screwTheory.OneDoFJoint;

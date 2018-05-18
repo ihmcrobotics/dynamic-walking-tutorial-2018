@@ -2,9 +2,9 @@ package us.ihmc.robotArmOne;
 
 import java.util.EnumMap;
 
-import us.ihmc.dwc.utilities.SevenDoFArmParameters.SevenDoFArmJointEnum;
 import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.euclid.tuple3D.interfaces.Vector3DReadOnly;
+import us.ihmc.robotArmOne.SevenDoFArmParameters.SevenDoFArmJointEnum;
 import us.ihmc.simulationconstructionset.Link;
 import us.ihmc.simulationconstructionset.PinJoint;
 import us.ihmc.simulationconstructionset.Robot;

@@ -4,7 +4,7 @@ import java.util.EnumMap;
 
 import org.apache.commons.lang3.StringUtils;
 
-import us.ihmc.dwc.utilities.SevenDoFArmParameters.SevenDoFArmJointEnum;
+import us.ihmc.robotArmOne.SevenDoFArmParameters.SevenDoFArmJointEnum;
 import us.ihmc.simulationconstructionset.util.RobotController;
 import us.ihmc.yoVariables.registry.YoVariableRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
