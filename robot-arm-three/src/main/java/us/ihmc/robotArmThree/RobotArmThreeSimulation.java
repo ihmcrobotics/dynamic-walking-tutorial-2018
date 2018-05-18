@@ -1,14 +1,16 @@
-package us.ihmc.robotArmTwo;
+package us.ihmc.robotArmThree;
 
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCoreMode;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
+import us.ihmc.robotArmTwo.RobotArmTwo;
 import us.ihmc.simulationconstructionset.Robot;
 import us.ihmc.simulationconstructionset.SimulationConstructionSet;
 
 /**
- * As in the {@code RobotArmOneSimulation} example, we will use the same 7-DoF robot arm which is
- * controlled using the IHMC whole-body controller core to track the same sine-wave trajectories,
- * see {@code RobotArmTwoController}.
+ * As in the {@code RobotArmOneSimulation} and {@code RobotArmTwoSimulation} examples, we will use
+ * the same 7-DoF robot arm which is controlled using the IHMC whole-body controller core. This
+ * time, the end-effector is controlled in taskspace to follow a 3D position and orientation
+ * trajectory, see {@link RobotArmThreeController}.
  * <p>
  * This example highlights the protocol for setting the controller core and the possibility to run
  * it with 3 different modes: inverse dynamics, inverse kinematics, and virtual model control.
@@ -21,7 +23,7 @@ import us.ihmc.simulationconstructionset.SimulationConstructionSet;
  * This is the main class that sets up and starts the simulation environment.
  * </p>
  */
-public class RobotArmTwoSimulation
+public class RobotArmThreeSimulation
 {
    /**
     * Three modes are available for the controller core:
@@ -36,7 +38,7 @@ public class RobotArmTwoSimulation
     */
    private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_DYNAMICS;
 
-   public RobotArmTwoSimulation()
+   public RobotArmThreeSimulation()
    {
       // The gravity has to be explicitly defined for the controller core (maybe a robot on the Moon someday...?)
       double gravityMagnitude = 9.81;
@@ -51,7 +53,7 @@ public class RobotArmTwoSimulation
       // Make sure the simulation and the controller are using the same value for the gravity.
       simulatedRobot.setGravity(-gravityMagnitude);
       // Create an instance of the controller.
-      RobotArmTwoController robotArmController = new RobotArmTwoController(robotArm, simulateDT, gravityMagnitude, controlMode, yoGraphicsListRegistry);
+      RobotArmThreeController robotArmController = new RobotArmThreeController(robotArm, simulateDT, gravityMagnitude, controlMode, yoGraphicsListRegistry);
       // When using the inverse kinematics mode, the simulation dynamics is disabled to simply provide a direct visualization of the controller core ouptut.
       if (controlMode == WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
          simulatedRobot.setDynamic(false);
@@ -62,6 +64,7 @@ public class RobotArmTwoSimulation
 
       // Creating the simulation.
       SimulationConstructionSet scs = new SimulationConstructionSet(simulatedRobot);
+      scs.addYoGraphicsListRegistry(yoGraphicsListRegistry, true);
       // As this example simulation is rather simple, let's prevent SCS from simulating faster than real-time.
       scs.setSimulateNoFasterThanRealTime(true);
       // Defining the simulation DT and the frequency at which data is logged.
@@ -74,6 +77,6 @@ public class RobotArmTwoSimulation
 
    public static void main(String[] args)
    {
-      new RobotArmTwoSimulation();
+      new RobotArmThreeSimulation();
    }
 }

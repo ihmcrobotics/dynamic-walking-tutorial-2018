@@ -167,6 +167,14 @@ public class RobotArmTwoController implements RobotController
       gains.createDerivativeGainUpdater(true);
    }
 
+   /**
+    * This method is called by the simulation every simulation tick. This is where the control part
+    * is to be implemented.
+    * <p>
+    * In this example, we will make the robot follow simple sine wave trajectories on the shoulder
+    * yaw and elbow pitch joints.
+    * </p>
+    */
    @Override
    public void doControl()
    {

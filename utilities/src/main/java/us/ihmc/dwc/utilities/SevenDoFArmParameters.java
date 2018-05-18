@@ -170,16 +170,16 @@ public class SevenDoFArmParameters
       jointLowerLimits.put(SevenDoFArmJointEnum.shoulderRoll, -Math.PI / 2.0);
       jointLowerLimits.put(SevenDoFArmJointEnum.shoulderPitch, -Math.PI / 2.0);
       jointLowerLimits.put(SevenDoFArmJointEnum.elbowPitch, 0.0);
-      jointLowerLimits.put(SevenDoFArmJointEnum.wristPitch, -Math.PI / 2.0);
-      jointLowerLimits.put(SevenDoFArmJointEnum.wristRoll, -Math.PI / 2.0);
+      jointLowerLimits.put(SevenDoFArmJointEnum.wristPitch, -Math.PI);
+      jointLowerLimits.put(SevenDoFArmJointEnum.wristRoll, -Math.PI);
       jointLowerLimits.put(SevenDoFArmJointEnum.wristYaw, -Math.PI);
 
       jointUpperLimits.put(SevenDoFArmJointEnum.shoulderYaw, Math.PI);
       jointUpperLimits.put(SevenDoFArmJointEnum.shoulderRoll, Math.PI / 2.0);
       jointUpperLimits.put(SevenDoFArmJointEnum.shoulderPitch, Math.PI / 2.0);
       jointUpperLimits.put(SevenDoFArmJointEnum.elbowPitch, Math.PI);
-      jointUpperLimits.put(SevenDoFArmJointEnum.wristPitch, Math.PI / 2.0);
-      jointUpperLimits.put(SevenDoFArmJointEnum.wristRoll, Math.PI / 2.0);
+      jointUpperLimits.put(SevenDoFArmJointEnum.wristPitch, Math.PI);
+      jointUpperLimits.put(SevenDoFArmJointEnum.wristRoll, Math.PI);
       jointUpperLimits.put(SevenDoFArmJointEnum.wristYaw, Math.PI);
 
       jointChildLinkNames.put(SevenDoFArmJointEnum.shoulderYaw, "shoulderYawLink");

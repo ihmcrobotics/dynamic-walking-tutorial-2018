@@ -2,6 +2,14 @@ package us.ihmc.robotArmOne;
 
 import us.ihmc.simulationconstructionset.SimulationConstructionSet;
 
+/**
+ * In this example simulation, we will create a simple 7-DoF robot arm {@code RobotArmOne} which is
+ * controlled with simple PD controllers on each joint to track sine-wave trajectories, see
+ * {@code RobotArmOneController}.
+ * <p>
+ * This is the main class that sets up and starts the simulation environment.
+ * </p>
+ */
 public class RobotArmOneSimulation
 {
    public RobotArmOneSimulation()

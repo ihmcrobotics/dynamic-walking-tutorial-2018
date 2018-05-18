@@ -111,6 +111,16 @@ public class RobotArmTwo
    }
 
    /**
+    * Retrieves the last rigid-body of the robot arm.
+    * 
+    * @return the end-effector.
+    */
+   public RigidBody getEndEffector()
+   {
+      return controlledJoints[controlledJoints.length - 1].getSuccessor();
+   }
+
+   /**
     * The joints to use for control.
     * 
     * @return the controlled joints.

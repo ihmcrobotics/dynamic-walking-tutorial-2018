@@ -27,4 +27,5 @@ mainDependencies {
 
    compile group: "us.ihmc", name: "utilities", version: "source"
    compile group: "us.ihmc", name: "robot-arm-one", version: "source"
+   compile group: "us.ihmc", name: "robot-arm-two", version: "source"
 }
