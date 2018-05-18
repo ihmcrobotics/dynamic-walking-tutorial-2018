@@ -120,6 +120,14 @@ public class RobotArmTwo
       return controlledJoints;
    }
 
+   /**
+    * Gets the reference frame which is origin is located at the robot's center of mass.
+    * <p>
+    * Its axes are aligned with the world frame.
+    * </p>
+    * 
+    * @return the center of mass reference frame.
+    */
    public ReferenceFrame getCenterOfMassFrame()
    {
       return centerOfMassFrame;
