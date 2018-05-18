@@ -9,15 +9,26 @@ public class RobotArmTwoSimulation
 {
    public RobotArmTwoSimulation()
    {
+      /*
+       *  Three modes are available for the controller core:
+       *  - Inverse Dynamics: Given desired accelerations and contact states, the controller core computes desired joint torques.
+       *  - Virtual Model Control: It is a generalization of the "Jacobian transpose" method to a whole-body framework, the output is desired joint torques.
+       *  - Inverse Kinematics: Given desired velocities, the controller core can integrate the these velocities to output both desired joint velocities and positions.
+       */
+      WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_DYNAMICS;
+      // The gravity has to be explicitly defined for the controller core (maybe a robot on the Moon someday...?)
       double gravityMagnitude = 9.81;
+      // The control frequency, which is equal to simulation frequency in this example, has to be provided to the controller core.
       double simulateDT = 1.0e-4;
+      // This is an additional registry that allows to display 3D graphics in the simulation. This feature is not demonstrated in this example.
       YoGraphicsListRegistry yoGraphicsListRegistry = new YoGraphicsListRegistry();
       // Create an instance of the robot arm.
       RobotArmOne robotArm = new RobotArmOne();
+      // Make sure the simulation and the controller are using the same value for the gravity.
       robotArm.setGravity(-gravityMagnitude);
-      WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_KINEMATICS;
       // Create an instance of the controller.
       RobotArmTwoController robotArmController = new RobotArmTwoController(robotArm, simulateDT, gravityMagnitude, controlMode, yoGraphicsListRegistry);
+      // When using the inverse kinematics mode, the simulation dynamics is disabled to simply provide a direct visualization of the controller core ouptut.
       if (controlMode == WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
          robotArm.setDynamic(false);
       // Make sure to initialize the controller.
@@ -27,9 +38,9 @@ public class RobotArmTwoSimulation
 
       // Creating the simulation.
       SimulationConstructionSet scs = new SimulationConstructionSet(robotArm);
-
+      // As this example simulation is rather simple, let's prevent SCS from simulating faster than real-time.
       scs.setSimulateNoFasterThanRealTime(true);
-      // 
+      // Defining the simulation DT and the frequency at which data is logged.
       scs.setDT(simulateDT, 10);
       // Defining the buffer size to ensure a minimum simulation duration before filling the graphs in the simulator.
       scs.setMaxBufferSize(65536);

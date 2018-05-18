@@ -17,9 +17,9 @@ public class RobotArmOneSimulation
 
       // Creating the simulation.
       SimulationConstructionSet scs = new SimulationConstructionSet(robotArm);
-
+      // As this example simulation is rather simple, let's prevent SCS from simulating faster than real-time.
       scs.setSimulateNoFasterThanRealTime(true);
-      // 
+      // Defining the simulation DT and the frequency at which data is logged.
       scs.setDT(1.0e-4, 10);
       // Defining the buffer size to ensure a minimum simulation duration before filling the graphs in the simulator.
       scs.setMaxBufferSize(65536);
