@@ -55,6 +55,26 @@ public class SevenDoFArmParameters
       }
 
       /**
+       * @return the lower limit of this joint range of motion.
+       */
+      public double getJointLowerLimit()
+      {
+         if (!jointLowerLimits.containsKey(this))
+            throw new RuntimeException("No lower limit has been registered for the joint: " + getJointName());
+         return jointLowerLimits.get(this);
+      }
+
+      /**
+       * @return the upper limit of this joint range of motion.
+       */
+      public double getJointUpperLimit()
+      {
+         if (!jointUpperLimits.containsKey(this))
+            throw new RuntimeException("No upper limit has been registered for the joint: " + getJointName());
+         return jointUpperLimits.get(this);
+      }
+
+      /**
        * @return the name of the link that is attached to this joint.
        */
       public String getChildLinkName()
@@ -120,6 +140,8 @@ public class SevenDoFArmParameters
 
    public static final EnumMap<SevenDoFArmJointEnum, Vector3DReadOnly> jointAxes = new EnumMap<>(SevenDoFArmJointEnum.class);
    public static final EnumMap<SevenDoFArmJointEnum, Vector3D> jointOffsets = new EnumMap<>(SevenDoFArmJointEnum.class);
+   public static final EnumMap<SevenDoFArmJointEnum, Double> jointLowerLimits = new EnumMap<>(SevenDoFArmJointEnum.class);
+   public static final EnumMap<SevenDoFArmJointEnum, Double> jointUpperLimits = new EnumMap<>(SevenDoFArmJointEnum.class);
    public static final EnumMap<SevenDoFArmJointEnum, String> jointChildLinkNames = new EnumMap<>(SevenDoFArmJointEnum.class);
    public static final EnumMap<SevenDoFArmJointEnum, Double> jointChildLinkMasses = new EnumMap<>(SevenDoFArmJointEnum.class);
    public static final EnumMap<SevenDoFArmJointEnum, Vector3D> jointChildLinkCoMs = new EnumMap<>(SevenDoFArmJointEnum.class);
@@ -143,6 +165,22 @@ public class SevenDoFArmParameters
       jointOffsets.put(SevenDoFArmJointEnum.wristPitch, new Vector3D(0.0, 0.0, armLinkLength));
       jointOffsets.put(SevenDoFArmJointEnum.wristRoll, new Vector3D(0.0, 0.0, 0.0));
       jointOffsets.put(SevenDoFArmJointEnum.wristYaw, new Vector3D(0.0, 0.0, 0.0));
+
+      jointLowerLimits.put(SevenDoFArmJointEnum.shoulderYaw, -Math.PI);
+      jointLowerLimits.put(SevenDoFArmJointEnum.shoulderRoll, -Math.PI / 2.0);
+      jointLowerLimits.put(SevenDoFArmJointEnum.shoulderPitch, -Math.PI / 2.0);
+      jointLowerLimits.put(SevenDoFArmJointEnum.elbowPitch, 0.0);
+      jointLowerLimits.put(SevenDoFArmJointEnum.wristPitch, -Math.PI / 2.0);
+      jointLowerLimits.put(SevenDoFArmJointEnum.wristRoll, -Math.PI / 2.0);
+      jointLowerLimits.put(SevenDoFArmJointEnum.wristYaw, -Math.PI);
+
+      jointUpperLimits.put(SevenDoFArmJointEnum.shoulderYaw, Math.PI);
+      jointUpperLimits.put(SevenDoFArmJointEnum.shoulderRoll, Math.PI / 2.0);
+      jointUpperLimits.put(SevenDoFArmJointEnum.shoulderPitch, Math.PI / 2.0);
+      jointUpperLimits.put(SevenDoFArmJointEnum.elbowPitch, Math.PI);
+      jointUpperLimits.put(SevenDoFArmJointEnum.wristPitch, Math.PI / 2.0);
+      jointUpperLimits.put(SevenDoFArmJointEnum.wristRoll, Math.PI / 2.0);
+      jointUpperLimits.put(SevenDoFArmJointEnum.wristYaw, Math.PI);
 
       jointChildLinkNames.put(SevenDoFArmJointEnum.shoulderYaw, "shoulderYawLink");
       jointChildLinkNames.put(SevenDoFArmJointEnum.shoulderRoll, "shoulderRollLink");

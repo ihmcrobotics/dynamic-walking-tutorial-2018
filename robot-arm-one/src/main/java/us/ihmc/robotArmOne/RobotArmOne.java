@@ -29,7 +29,7 @@ public class RobotArmOne extends Robot
 
    public RobotArmOne()
    {
-      super("RobotArm1");
+      super("RobotArm");
 
       /*
        * Let's first create all the joints, they are all PinJoints which is used to define a 1-DoF
@@ -68,7 +68,11 @@ public class RobotArmOne extends Robot
       String jointName = jointEnum.getJointName();
       Vector3D jointOffset = jointEnum.getJointOffset();
       Vector3DReadOnly jointAxis = jointEnum.getJointAxis();
-      return new PinJoint(jointName, jointOffset, this, jointAxis);
+      PinJoint pinJoint = new PinJoint(jointName, jointOffset, this, jointAxis);
+      double lowerLimit = jointEnum.getJointLowerLimit();
+      double upperLimit = jointEnum.getJointUpperLimit();
+      pinJoint.setLimitStops(lowerLimit, upperLimit, 50.0, 10.0);
+      return pinJoint;
    }
 
    private void setupLinks()
