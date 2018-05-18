@@ -1,5 +1,6 @@
 package us.ihmc.robotArmTwo;
 
+import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCoreMode;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
 import us.ihmc.robotArmOne.RobotArmOne;
 import us.ihmc.simulationconstructionset.SimulationConstructionSet;
@@ -14,8 +15,11 @@ public class RobotArmTwoSimulation
       // Create an instance of the robot arm.
       RobotArmOne robotArm = new RobotArmOne();
       robotArm.setGravity(-gravityMagnitude);
+      WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_KINEMATICS;
       // Create an instance of the controller.
-      RobotArmTwoController robotArmController = new RobotArmTwoController(robotArm, simulateDT, gravityMagnitude, yoGraphicsListRegistry);
+      RobotArmTwoController robotArmController = new RobotArmTwoController(robotArm, simulateDT, gravityMagnitude, controlMode, yoGraphicsListRegistry);
+      if (controlMode == WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
+         robotArm.setDynamic(false);
       // Make sure to initialize the controller.
       robotArmController.initialize();
       // Attach the controller to the robot.

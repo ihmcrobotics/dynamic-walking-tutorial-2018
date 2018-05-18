@@ -53,37 +53,66 @@ public class RobotArmTwoController implements RobotController
     */
    private final EnumMap<SevenDoFArmJointEnum, YoDouble> desiredVelocities = new EnumMap<>(SevenDoFArmJointEnum.class);
    /**
-    * Desired acceleration for each joint. {@code YoDouble}s are used instead of simple
-    * {@code double} so they can be monitored via the Simulation Construction Set.
+    * This variable stores the current simulation time and is updated by the simulation.
     */
-   private final EnumMap<SevenDoFArmJointEnum, YoDouble> desiredAccelerations = new EnumMap<>(SevenDoFArmJointEnum.class);
-
-   private final YoPDGains gains = new YoPDGains("jointsGains", registry);
-
    private final YoDouble time;
 
+   /**
+    * One set of gains that will be used for every joint.
+    */
+   private final YoPDGains gains = new YoPDGains("jointsGains", registry);
+
    private final RobotArmOne simulatedRobotArm;
+   /**
+    * A generator tool that can convert a simulated robot into what we often call an "inverse
+    * dynamics robot". This inverse dynamics represents the same robot but offers a different set of
+    * features. This type of robot is used by the controller core.
+    */
    private final InverseDynamicsJointsFromSCSRobotGenerator inverseDynamicsRobot;
+   /**
+    * A mapping to easily retrieve joints in the inverse dynamics robot given a joint from the
+    * simulated robot.
+    */
    private final SCSToInverseDynamicsJointMap jointMap;
 
    private final WholeBodyControllerCore wholeBodyControllerCore;
    private final ReferenceFrame centerOfMassFrame;
 
-   private final ControllerCoreCommand controllerCoreCommand = new ControllerCoreCommand(WholeBodyControllerCoreMode.INVERSE_DYNAMICS);
+   private final ControllerCoreCommand controllerCoreCommand;
+   private final WholeBodyControllerCoreMode controllerCoreMode;
 
-   public RobotArmTwoController(RobotArmOne robotArm, double controlDT, double gravityZ, YoGraphicsListRegistry yoGraphicsListRegistry)
+   public RobotArmTwoController(RobotArmOne robotArm, double controlDT, double gravityZ, WholeBodyControllerCoreMode controllerCoreMode,
+                                YoGraphicsListRegistry yoGraphicsListRegistry)
    {
       this.simulatedRobotArm = robotArm;
+      this.controllerCoreMode = controllerCoreMode;
+      controllerCoreCommand = new ControllerCoreCommand(controllerCoreMode);
       time = robotArm.getYoTime();
       inverseDynamicsRobot = new InverseDynamicsJointsFromSCSRobotGenerator(robotArm);
       jointMap = inverseDynamicsRobot.getSCSToInverseDynamicsJointMap();
+      centerOfMassFrame = new CenterOfMassReferenceFrame("centerOfMassFrame", WORLD_FRAME, inverseDynamicsRobot.getElevator());
 
+      wholeBodyControllerCore = createControllerCore(controlDT, gravityZ, yoGraphicsListRegistry);
+
+      /*
+       * YoDoubles need to be created first with a given name that is to represent the variable in
+       * the Simulation Construction Set, and the registry so the simulation can find them.
+       */
+      for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
+      {
+         String jointName = StringUtils.capitalize(jointEnum.getJointName());
+         desiredPositions.put(jointEnum, new YoDouble("desiredPosition" + jointName, registry));
+         desiredVelocities.put(jointEnum, new YoDouble("desiredVelocity" + jointName, registry));
+      }
+   }
+
+   public WholeBodyControllerCore createControllerCore(double controlDT, double gravityZ, YoGraphicsListRegistry yoGraphicsListRegistry)
+   {
       FloatingInverseDynamicsJoint rootJoint = null;
       RigidBody elevator = inverseDynamicsRobot.getElevator();
       InverseDynamicsJoint[] inverseDynamicsJoints = ScrewTools.computeSubtreeJoints(elevator);
       OneDoFJoint[] controlledJoints = ScrewTools.filterJoints(inverseDynamicsJoints, OneDoFJoint.class);
 
-      centerOfMassFrame = new CenterOfMassReferenceFrame("centerOfMassFrame", WORLD_FRAME, elevator);
       ControllerCoreOptimizationSettings controllerCoreOptimizationSettings = new RobotArmTwoOptimizationSettings();
 
       WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT, gravityZ, rootJoint, inverseDynamicsJoints, centerOfMassFrame,
@@ -101,19 +130,7 @@ public class RobotArmTwoController implements RobotController
       allPossibleCommands.addCommand(command);
 
       JointDesiredOutputList lowLevelControllerOutput = new JointDesiredOutputList(controlledJoints);
-      wholeBodyControllerCore = new WholeBodyControllerCore(toolbox, allPossibleCommands, lowLevelControllerOutput, registry);
-
-      /*
-       * YoDoubles need to be created first with a given name that is to represent the variable in
-       * the Simulation Construction Set, and the registry so the simulation can find them.
-       */
-      for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
-      {
-         String jointName = StringUtils.capitalize(jointEnum.getJointName());
-         desiredPositions.put(jointEnum, new YoDouble("desiredPosition" + jointName, registry));
-         desiredVelocities.put(jointEnum, new YoDouble("desiredVelocity" + jointName, registry));
-         desiredAccelerations.put(jointEnum, new YoDouble("desiredAcceleration" + jointName, registry));
-      }
+      return new WholeBodyControllerCore(toolbox, allPossibleCommands, lowLevelControllerOutput, registry);
    }
 
    @Override
@@ -137,11 +154,9 @@ public class RobotArmTwoController implements RobotController
          double omega = TWO_PI * frequency;
          double q = amplitude * Math.sin(omega * time.getValue() + phase);
          double qDot = omega * amplitude * Math.cos(omega * time.getValue() + phase);
-         double qDDot = -omega * omega * amplitude * Math.sin(omega * time.getValue() + phase);
 
          desiredPositions.get(SevenDoFArmJointEnum.shoulderYaw).set(q);
          desiredVelocities.get(SevenDoFArmJointEnum.shoulderYaw).set(qDot);
-         desiredAccelerations.get(SevenDoFArmJointEnum.shoulderYaw).set(qDDot);
       }
 
       { // Making the elbow pitch joint follow a sine wave trajectory:
@@ -152,11 +167,9 @@ public class RobotArmTwoController implements RobotController
          double omega = TWO_PI * frequency;
          double q = offset + amplitude * Math.sin(omega * time.getValue() + phase);
          double qDot = omega * amplitude * Math.cos(omega * time.getValue() + phase);
-         double qDDot = -omega * omega * amplitude * Math.cos(omega * time.getValue() + phase);
 
          desiredPositions.get(SevenDoFArmJointEnum.elbowPitch).set(q);
          desiredVelocities.get(SevenDoFArmJointEnum.elbowPitch).set(qDot);
-         desiredAccelerations.get(SevenDoFArmJointEnum.elbowPitch).set(qDDot);
       }
 
       JointspaceFeedbackControlCommand jointCommand = new JointspaceFeedbackControlCommand();
@@ -185,7 +198,15 @@ public class RobotArmTwoController implements RobotController
          OneDoFJoint inverseDynamicsJoint = jointMap.getInverseDynamicsOneDoFJoint(simulatedJoint);
          JointDesiredOutputReadOnly jointDesiredOutput = outputForLowLevelController.getJointDesiredOutput(inverseDynamicsJoint);
 
-         simulatedJoint.setTau(jointDesiredOutput.getDesiredTorque());
+         if (controllerCoreMode != WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
+         {
+            simulatedJoint.setTau(jointDesiredOutput.getDesiredTorque());
+         }
+         else
+         {
+            simulatedJoint.setQ(jointDesiredOutput.getDesiredPosition());
+            simulatedJoint.setQd(jointDesiredOutput.getDesiredVelocity());
+         }
       }
    }
 

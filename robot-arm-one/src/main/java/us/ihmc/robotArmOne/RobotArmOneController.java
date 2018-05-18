@@ -50,6 +50,9 @@ public class RobotArmOneController implements RobotController
    private final EnumMap<SevenDoFArmJointEnum, YoDouble> velocityErrors = new EnumMap<>(SevenDoFArmJointEnum.class);
 
    private final RobotArmOne robot;
+   /**
+    * This variable stores the current simulation time and is updated by the simulation.
+    */
    private final YoDouble time;
 
    public RobotArmOneController(RobotArmOne robot)
