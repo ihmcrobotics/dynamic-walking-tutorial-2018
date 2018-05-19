@@ -17,6 +17,7 @@ import us.ihmc.simulationconstructionset.UniversalJoint;
 
 public class M2Robot extends Robot
 {
+   // This scale is used to make the feet wider so it is easier to keep the robot balance in single support.
    private static final double FOOT_WIDTH_SCALE_FACTOR = 1.5;
 
    public static final double HIP_OFFSET_Y = 0.184 / 2.0;

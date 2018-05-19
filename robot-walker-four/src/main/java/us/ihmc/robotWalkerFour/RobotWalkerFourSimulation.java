@@ -52,8 +52,6 @@ public class RobotWalkerFourSimulation
 
       // Creating the simulation.
       SimulationConstructionSet scs = new SimulationConstructionSet(simulatedRobot);
-//      // As this example simulation is rather simple, let's prevent SCS from simulating faster than real-time.
-//      scs.setSimulateNoFasterThanRealTime(true);
       // Defining the simulation DT and the frequency at which data is logged.
       scs.setDT(simulateDT, 10);
       // Defining the buffer size to ensure a minimum simulation duration before filling the graphs in the simulator.
