@@ -15,10 +15,6 @@ ihmc {
    vcsUrl = "https://github.com/ihmcrobotics/dynamic-walking-2018"
    openSource = true
    
-   // Temporary declaration hoping that will increase the available bandwidth for the tutorial day.
-   // This declaration should be removed once the conference is over.
-   repository("https://artifactory.ihmc.us/artifactory/snapshots/")
-   
    configureDependencyResolution()
    configurePublications()
 }
